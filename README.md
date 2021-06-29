@@ -57,7 +57,7 @@ Visit [http://localhost:8080](http://localhost:8080) for a Demo-Frontend.
 
 The statistics for a short-link can be requested via [http://localhost:6060/pkg/urlShortener/"put_url-Code_here"](http://localhost:6060/pkg/urlShortener/"put_url-Code_here")
 
-### Look at the ```godoc```` Documentation
+### Look at the ```godoc``` Documentation
 
 The documentation for the Go-App is available under [http://localhost:6060/pkg/urlShortener/](http://localhost:6060/pkg/urlShortener/).
 
