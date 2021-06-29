@@ -1,0 +1,18 @@
+*.tar
+
+# exclude build output:
+build/*
+# exception to the rule, so we keep the folder itself ...
+!build/.gitkeep
+
+# exclude .vscode folder
+/.vscode
+
+# exclude Python cache
+__pycache__
+# exclude python rubbish
+.pyc
+.pyo
+
+# exclude depencies:
+dependencies/*

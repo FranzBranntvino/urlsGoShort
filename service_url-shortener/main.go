@@ -1,0 +1,47 @@
+// Main package for the URL-Shortener Go Demo application: UrlsGoShort.
+// This just is initializing the App-Server running with REST features.
+package main
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Imports:
+
+import (
+	"fmt"
+	handler "urlShortener/urlHandler"
+	store "urlShortener/urlStorage"
+)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Global:
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants:
+
+const (
+	routeAddress = "localhost"
+	routePort    = "8080"
+	storeAddress = "172.17.0.1"
+	storePort    = "6379"
+)
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Exported:
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Implementation:
+
+func main() {
+	var err error
+
+	_, err = store.Initialize(storeAddress, storePort)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to start the Store - Error: %v", err))
+	}
+	fmt.Printf("\nRedis started successfully: %s:%s", storeAddress, storePort)
+
+	err = handler.Initialize(routeAddress, routePort)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to start the REST-endpoint - Error: %v", err))
+	}
+	fmt.Printf("\nREST-endpoint started successfully: %s:%s", routeAddress, routePort)
+}

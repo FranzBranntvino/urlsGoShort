@@ -1,0 +1,48 @@
+##################################################
+# Docker-Compose yaml file compatibility Version
+version: "3.8"
+
+##################################################
+# The Services including their build and run parameters
+services:
+
+  redis-server:
+    build:
+      context: ./service_redis-server
+      dockerfile: Dockerfile
+    image: service_redis-server
+    container_name: service_redis-server
+    privileged: false
+    volumes:
+      - $PWD/build/redis-data:/data
+    command: redis-server --appendonly yes
+    ports:
+      - 6379:6379
+    environment:
+     - REDIS_REPLICATION_MODE=master
+
+  url-shortener:
+    build:
+      context: ./service_url-shortener
+      dockerfile: Dockerfile
+    image: service_url-shortener
+    container_name: service_url-shortener
+    privileged: false
+    ports:
+      - 8080:8080
+      - 8443:443
+    depends_on:
+      - redis-server
+
+  doc-server:
+    build:
+      context: ./service_url-shortener
+      dockerfile: doc.Dockerfile
+    image: service_doc-server
+    container_name: service_doc-server
+    privileged: false
+    ports:
+      - 6060:6060
+
+##################################################
+# EOF

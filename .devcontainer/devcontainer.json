@@ -1,0 +1,96 @@
+// For format details, see https://aka.ms/vscode-remote/devcontainer.json or the definition README at
+// https://github.com/microsoft/vscode-dev-containers/tree/master/containers/docker-in-docker
+{
+    "name": "Go DevBox",
+
+    // Sets the run context to one level up instead of the .devcontainer folder.
+//    "context": "..",
+
+    // Update the 'dockerFile' property if you aren't using the standard 'Dockerfile' filename.
+    "dockerFile": "Dockerfile",
+
+//    "workspaceMount": "source=${localWorkspaceFolder}/..,target=/home/user/urlsGoShort,type=bind,consistency=cached",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/home/user/urlsGoShort,type=bind,consistency=cached",
+    "workspaceFolder": "/home/user/urlsGoShort",
+
+    // The optional 'runArgs' property can be used to specify additional runtime arguments.
+    "runArgs": [
+        // Uncomment the next line to use a non-root user. On Linux, this will prevent
+        // new files getting created as root, but you may need to update the USER_UID
+        // and USER_GID in .devcontainer/Dockerfile to match your user if not 1000.
+        // "-u", "vscode",
+
+        "--privileged",
+
+        // Uncomment the next line if you will use a ptrace-based debugger like C++, Go, and Rust.
+        "--cap-add=SYS_PTRACE", "--security-opt", "seccomp=unconfined",
+
+        // mount the Users Home Dir into the container ...
+        // "-v", "${env:HOME}${env:USERPROFILE}:/home/user",
+
+        // provide Access to Docker inside the container, via the socket of the outside docker deamon ...
+        "-v", "/var/run/docker.sock:/var/run/docker.sock"
+
+        // provide Access to ./ssh
+        // ,"-v", "${env:HOME}${env:USERPROFILE}/.ssh:/root/.ssh-localhost:ro"
+    ],
+
+	// Set environment variables for VS Code and sub-processes
+	"remoteEnv": {
+        "GOPATH": "/home/user/go:/workspaces:/home/user/urlsGoShort"
+    },
+
+    // Use 'settings' to set *default* container specific settings.json values on container create. 
+    // You can edit these settings after create using File > Preferences > Settings > Remote.
+    "settings": { 
+        "terminal.integrated.shell.linux": "/bin/bash",
+//        "go.gopath": "/go",
+        "remote.extensionKind": {
+            "ms-azuretools.vscode-docker": "workspace"
+        }
+    },
+
+    // Uncomment the next line if you want to publish any ports.
+    // "appPort": [],
+
+    // run a search for project repo subfolders to add them to the GOPATH and persist them in a user specific .bashrc
+    "postCreateCommand": "find /home/user/urlsGoShort/*/'.git' -maxdepth 0 -type d -exec dirname {} \\; | xargs --delimiter=':' /bin/bash -c 'echo $0 > test.txt' && sed -i 's/\\ /:/g' test.txt && test=$(cat test.txt) && export GOPATH=$GOPATH:$test && echo 'RESULT:' && echo $GOPATH && rm test.txt && echo export GOPATH=$GOPATH >> ~/.bashrc",
+
+    // Add the IDs of extensions you want installed when the container is created in the array below.
+    "extensions": [
+        "MS-CEINTL.vscode-language-pack-en-GB",
+        "ms-vscode.go",
+        "ms-vscode.Go",
+        "ms-vscode.cpptools",
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+
+        "AlanWalk.markdown-toc",
+        "austin.code-gnu-global",
+        "berublan.vscode-log-viewer",
+        "bierner.markdown-footnotes",
+        "ChaunceyKiwi.json-tree-view",
+        "DavidAnson.vscode-markdownlint",
+        "dbaeumer.vscode-eslint",
+        "eamodio.gitlens",
+        "Gruntfuggly.todo-tree",
+        "maziac.asm-code-lens",
+        "mitaki28.vscode-clang",
+        "quillaja.goasm",
+        "redhat.vscode-yaml",
+        "rexebin.classio",
+        "rexebin.classlens",
+        "rogalmic.bash-debug",
+        "seanwu.vscode-qt-for-python",
+        "shd101wyy.markdown-preview-enhanced",
+        "SonarSource.sonarlint-vscode",
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-german",
+        "Tyriar.shell-launcher",
+        "yzane.markdown-pdf",
+        "yzhang.markdown-all-in-one",
+        "zhuangtongfa.material-theme",
+        "zxh404.vscode-proto3"
+    ]
+
+}

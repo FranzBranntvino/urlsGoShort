@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+        body {
+            color: #222222;
+            margin: 0px;
+            padding: 0px;
+            background-color: #dddddd;
+            font-family: 'Helvetica', sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .heading {
+            padding-top: 2%;
+        }
+
+        .url-converter {
+            position: relative;
+            width: 70%;
+            margin: auto;
+            padding: 5%;
+        }
+
+        input {
+            text-align: center;
+            width: 50%;
+            position: inherit;
+            padding: 15px 32px;
+            font-size: 22px;
+            display: block;
+            border: none;
+            background-color: #222222;
+            color: #DDDDDD;
+            /* centering */
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, 0);
+            transform: translate(-50%, 0);
+        }
+
+        button {
+            margin-top: 10px;;
+            width: 33%;
+            border-radius: 12px;
+            background-color: #4C4C4C;
+            border: none;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 22px;
+            transition-duration: 0.4s;
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+            position: inherit;
+            /* centering */
+            top: 50%;
+            left: 50%;
+            -ms-transform: translate(-50%, 0);
+            transform: translate(-50%, 0);
+        }
+
+        .shortlink {
+            position: relative;
+            width: 70%;
+            margin: auto;
+            padding: 5%;
+            display: none;
+        }
+
+        .long-url, .short-url {
+            text-align: center;
+            position: relative;
+            font-size: 20px;
+            width: 70%;
+            margin: auto;
+            margin-bottom: 150px;
+        }
+
+        .long-url::before {
+            text-align: center;
+            position: absolute;
+            font-size: 132px;
+            left: 0;
+            right: 0;
+            top: 15px;
+            content: ' \2193';
+            /* centering */
+            top: 70%;
+            left: 50%;
+            -ms-transform: translate(-50%, 0);
+            transform: translate(-50%, 0);
+        }
+    </style>
+
+    <script type="text/javascript">
+        window.onerror = function (msg, url, line) {
+            alert("Message : " + msg + "\n" + "url : " + url + "\n" + "Line number : " + line );
+        }
+    </script>
+    </head>
+
+    <body>
+
+
+        <div class="container">
+
+			<div class="heading">
+                <h1>URL Shortener Go Demo</h1>
+            </div>
+
+			<div class="url-converter">
+                <input type="text" id="input" placeholder="--> Enter the URL <-- " />
+                <button id="generate-button", style="cursor: pointer;">Generate Short-Link</button>
+            </div>
+
+			<div class="shortlink">
+                <div class="long-url"></div>
+                <div class="short-url"></div>
+            </div>
+
+		</div>
+
+
+        <script type="text/javascript">
+            const box_urlInput = document.querySelector('#input');
+            const button_urlGenerate = document.querySelector('#generate-button');
+            const container_results = document.querySelector('.shortlink');
+            const longUrl = document.querySelector('.long-url');
+            const shortUrl = document.querySelector('.short-url');
+        
+            button_urlGenerate.onclick = (event) => {
+                const url = box_urlInput.value.trim();
+                getShortUrl(url);
+            };
+        
+            // listen to Enter/Return key in input field
+            var input = document.getElementById("input");
+            input.addEventListener("keyup", function(event) {
+                if (event.keyCode === 13) {
+                    event.preventDefault();
+                    document.getElementById("generate-button").click();
+                }
+            });
+        
+            function getShortUrl(url) {
+                jsonData = { long_url : url };
+                fetch(`http://localhost:8080/createShortUrl`, {
+                    method: 'POST', // *GET, POST, PUT, DELETE, etc.
+                    mode: 'cors', // no-cors, *cors, same-origin
+                    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
+                    // headers: {
+                    // 	'Content-Type': 'application/json;charset=utf-8'
+                    // },
+                    body: JSON.stringify(jsonData)
+                })
+                .then((resp) => resp.json())
+                .then((result) => {
+                    if (result.hasOwnProperty('response')) {
+                        renderURLs(result['response']);
+                    }
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+            }
+        
+            const linkCompletion = link => {
+                return link.startsWith("http://") || link.startsWith("https://") ?
+                link
+                : `http://${link}`;
+            };
+        
+            function renderURLs(response) {
+                console.log(response);
+                const {
+                    long_url, short_url
+                } = response;
+                container_results.style.display = 'initial';
+                longUrl.innerHTML = "<a href="+linkCompletion(long_url)+" target=\"_blank\" rel=\"noopener noreferrer\">"+long_url+"</a>";
+                shortUrl.innerHTML = "<a href="+linkCompletion(short_url)+" target=\"_blank\" rel=\"noopener noreferrer\">"+short_url+"</a>";;
+            }
+        </script>
+    </body>
+</html>
