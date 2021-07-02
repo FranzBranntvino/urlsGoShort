@@ -55,7 +55,7 @@ docker-compose stop
 
 Visit [http://localhost:8080](http://localhost:8080) for a Demo-Frontend.
 
-The statistics for a short-link can be requested via [http://localhost:6060/pkg/urlShortener/"put_url-Code_here"](http://localhost:6060/pkg/urlShortener/"put_url-Code_here")
+The statistics for a short-link can be requested via [http://localhost:8080/shortUrlStats/"put_url-Code_here"](http://localhost:8080/shortUrlStats/"put_url-Code_here")
 
 ### Look at the ```godoc``` Documentation
 
