@@ -7,7 +7,7 @@ package main
 
 import (
 	"fmt"
-	handler "urlShortener/urlHandler"
+	router "urlShortener/urlHandler"
 	store "urlShortener/urlStorage"
 )
 
@@ -33,13 +33,14 @@ const (
 func main() {
 	var err error
 
-	_, err = store.Initialize(storeAddress, storePort)
+	err = store.Initialize(storeAddress, storePort)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start the Store - Error: %v", err))
 	}
 	fmt.Printf("\nRedis started successfully: %s:%s", storeAddress, storePort)
 
-	err = handler.Initialize(routeAddress, routePort)
+	router.Initialize(routeAddress, routePort)
+	err = router.StartServing()
 	if err != nil {
 		panic(fmt.Sprintf("Failed to start the REST-endpoint - Error: %v", err))
 	}

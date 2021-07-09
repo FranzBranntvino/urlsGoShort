@@ -106,26 +106,27 @@
     </head>
 
     <body>
-
+        <!-- <script type="text/javascript">
+            // console.log = function(){alert("Log: " + JSON.stringify(Array.from(arguments)));};
+            // console.warn = function(){alert("Warn: " + JSON.stringify(Array.from(arguments)));};
+            console.error = function(){alert("Error: " + JSON.stringify(Array.from(arguments)));};
+        </script> -->
 
         <div class="container">
-
-			<div class="heading">
+            <div class="heading">
                 <h1>URL Shortener Go Demo</h1>
             </div>
 
-			<div class="url-converter">
+            <div class="url-converter">
                 <input type="text" id="input" placeholder="--> Enter the URL <-- " />
                 <button id="generate-button", style="cursor: pointer;">Generate Short-Link</button>
             </div>
 
-			<div class="shortlink">
+            <div class="shortlink">
                 <div class="long-url"></div>
                 <div class="short-url"></div>
             </div>
-
-		</div>
-
+        </div>
 
         <script type="text/javascript">
             const box_urlInput = document.querySelector('#input');
@@ -133,12 +134,13 @@
             const container_results = document.querySelector('.shortlink');
             const longUrl = document.querySelector('.long-url');
             const shortUrl = document.querySelector('.short-url');
-        
+
             button_urlGenerate.onclick = (event) => {
                 const url = box_urlInput.value.trim();
+                console.log("Sending request for: " + url + " with length: " + url.length);
                 getShortUrl(url);
             };
-        
+
             // listen to Enter/Return key in input field
             var input = document.getElementById("input");
             input.addEventListener("keyup", function(event) {
@@ -147,7 +149,7 @@
                     document.getElementById("generate-button").click();
                 }
             });
-        
+
             function getShortUrl(url) {
                 jsonData = { long_url : url };
                 fetch(`http://localhost:8080/createShortUrl`, {
@@ -169,13 +171,11 @@
                     console.log(error);
                 });
             }
-        
+
             const linkCompletion = link => {
-                return link.startsWith("http://") || link.startsWith("https://") ?
-                link
-                : `http://${link}`;
+                return link.startsWith("http://") || link.startsWith("https://") || link.startsWith("file:///") ? link : `http://${link}`;
             };
-        
+
             function renderURLs(response) {
                 console.log(response);
                 const {

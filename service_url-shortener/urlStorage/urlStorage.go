@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	// not standard
@@ -63,20 +64,19 @@ func NewUrlItem() *UrlItem {
 // Implementation:
 
 // Initialize the DB-client and return a pointer to access the Storage-Service.
-func Initialize(storeIp string, storePort string) (*storeClient, error) {
-	redisClient := redis.NewClient(&redis.Options{
+func Initialize(storeIp string, storePort string) error {
+	storeService.redisClient = redis.NewClient(&redis.Options{
 		Addr:     storeIp + ":" + storePort,
 		Password: "",
 		DB:       0,
 	})
 
-	_, err := redisClient.Ping(ctx).Result()
+	_, err := storeService.redisClient.Ping(ctx).Result()
 	if err != nil {
-		panic(fmt.Sprintf("Error init Redis: %v", err))
+		log.Println(fmt.Sprintf("Error init Redis: %v", err))
 	}
-	storeService.redisClient = redisClient
 
-	return storeService, err
+	return err
 }
 
 // Close the connection to the DB

@@ -5,11 +5,11 @@ package urlHandler
 // Imports:
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"strings"
 
 	shortener "urlShortener/urlShortener"
 	store "urlShortener/urlStorage"
@@ -22,28 +22,30 @@ import (
 
 type routerEngine struct {
 	router *gin.Engine
+    ip string
+    port string
 }
 
 var (
-	routerService   = &routerEngine{}
+	routerService = &routerEngine{nil, "", ""}
 )
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants:
 
 // The GET "/" (default route) lands the Demo frontpage.
-const GET_Entry = "/"
+const GET_entry = "/"
 
 // The POST "/createShortUrl" for creating a short-link.
-const POST_CreateURL = "/createShortUrl"
+const POST_createURL = "/createShortUrl"
 
 // The GET "/:shortUrl" for redirecting the short-link to the original URL.
-const GET_ShortUrl = "/:shortUrl"
+const GET_shortUrl = "/:shortUrl"
 
 // The GET "/shortUrlStats/:shortUrl" for requesting the short-link meta data.
-const GET_ShortUrlStats = "/shortUrlStats/:shortUrl"
+const GET_shortUrlStats = "/shortUrlStats/:shortUrl"
 
-// The POST "/shortUrlDelete/:shortUrl" for requesting the short-link to be deleted.
-const POST_ShortUrlDelete = "/shortUrlDelete"
+// The DELETE "/shortUrlDelete/:shortUrl" for requesting the short-link to be deleted.
+const DELETE_shortUrlDelete = "/shortUrlDelete/:shortUrl"
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Exported:
@@ -72,49 +74,67 @@ type ResponseStats struct {
     VisitCount int `json:"visit_count" binding:"required"`
 }
 
-// Definition of the request model for short-link deletion
-type UrlDeleteRequest struct {
-    ShortUrl string `json:"short_url" binding:"required"`
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Implementation:
 
-// Initialize the REST-
-func Initialize(routeIp string, routePort string) (err error) {
-
+// Initialize the REST-Service
+func Initialize(routeIp string, routePort string) {
 	routerService.router = gin.Default()
+    routerService.ip = routeIp
+    routerService.port = routePort
 
-	routerService.router.GET(GET_Entry, func(ctx *gin.Context) {
-		GetEntry(ctx)
+    routerService.router.Static("/static-data", "./static-data")
+    // routerService.router.StaticFS("/static-data", http.Dir("static_data"))
+    routerService.router.StaticFile("/index.html", "./static-data/index.html")
+    routerService.router.StaticFile("/favicon.ico", "./static-data/favicon.ico")
+
+	routerService.router.GET(GET_entry, func(ctx *gin.Context) {
+		getEntry(ctx)
 	})
 
-	routerService.router.POST(POST_CreateURL, func(ctx *gin.Context) {
-		ShortUrlCreate(ctx, routeIp+":"+routePort)
+	routerService.router.POST(POST_createURL, func(ctx *gin.Context) {
+		shortUrlCreate(ctx)
 	})
 
-	routerService.router.GET(GET_ShortUrl, func(ctx *gin.Context) {
-		ShortUrlRedirect(ctx)
+	routerService.router.GET(GET_shortUrl, func(ctx *gin.Context) {
+		shortUrlRedirect(ctx)
 	})
 
-	routerService.router.GET(GET_ShortUrlStats, func(ctx *gin.Context) {
-		ShortUrlStatistics(ctx)
+	routerService.router.GET(GET_shortUrlStats, func(ctx *gin.Context) {
+		shortUrlStatistics(ctx)
 	})
 
-	routerService.router.POST(POST_ShortUrlDelete, func(ctx *gin.Context) {
-		ShortUrlDelete(ctx, routeIp+":"+routePort)
+    routerService.router.DELETE(DELETE_shortUrlDelete, func(ctx *gin.Context) {
+		shortUrlDelete(ctx)
 	})
-
-	err = routerService.router.Run(":" + routePort)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to start the web server - Error: %v", err))
-	}
-
-    return err
 }
 
+// Starting the router service
+// To be called only after initializing function
+func StartServing() (error) {
+    if routerService.router != nil {
+        err := routerService.router.Run(":" + routerService.port)
+        if err != nil {
+            panic(fmt.Sprintf("Failed to start the web server - Error: %v", err))
+        }
+        return nil
+    }
+    return errors.New("router not initialized")
+}
 
-func GetEntry(ctx *gin.Context) {
+// Stopping the router service
+func StopServing() (error) {
+    if routerService.router != nil {
+        // TODO implement shutdown here ...
+        return nil
+    }
+    return errors.New("router not initialized")
+}
+
+////////////////////////////////////////////////////////////
+
+// Handling static Index
+func getEntry(ctx *gin.Context) {
 	demoContent, err := ioutil.ReadFile("static-data/index.html")
     if err == nil {
         ctx.Data(http.StatusOK, "text/html; charset=utf-8", demoContent)
@@ -123,7 +143,9 @@ func GetEntry(ctx *gin.Context) {
     }
 }
 
-func ShortUrlCreate(ctx *gin.Context, urlCodeHostname string) {
+// Handling the Request about creation for a short link and it's DB record entry
+func shortUrlCreate(ctx *gin.Context) {
+    var urlCodeHostname string = routerService.ip+":"+routerService.port
     var creationRequest UrlCreationRequest
     if err :=ctx.ShouldBindJSON(&creationRequest); err != nil {
        ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -144,38 +166,38 @@ func ShortUrlCreate(ctx *gin.Context, urlCodeHostname string) {
         // send response
        ctx.Header("Content-Type", "application/json")
         responseUrls := &Response{
-            Status:  http.StatusOK,
+            Status:  http.StatusCreated,
             Message: "Short url created successfully.",
             Response: ResponseUrls{
                 LongUrl:  longUrl,
                 ShortUrl: urlCodeHostname + "/" + urlRecord.UrlCode,
             },
         }
-       ctx.JSON(http.StatusOK, responseUrls)
+       ctx.JSON(http.StatusCreated, responseUrls)
     } else {
         errorResponse(ctx, http.StatusInternalServerError, err)
     }
 }
 
-func ShortUrlRedirect(ctx *gin.Context) {
+// Handling the Request about redirection/routing for a short link to it's original location
+func shortUrlRedirect(ctx *gin.Context) {
     shortUrl :=ctx.Param("shortUrl")
     urlRecord, err := store.UrlRecordRead(shortUrl)
-
     if err == nil {
         // count the redirect and write back to store
         urlRecord.VisitCount += 1
         store.UrlRecordWrite(urlRecord)
-
         ctx.Redirect(http.StatusFound, urlRecord.UrlBase)
     } else {
-        errorResponse(ctx, http.StatusInternalServerError, err)
+        errorResponse(ctx, http.StatusBadRequest, err)
     }
 }
 
-func ShortUrlStatistics(ctx *gin.Context) {
+// Handling the Request about the statistics for a short link redirecting to it's original location
+func shortUrlStatistics(ctx *gin.Context) {
     shortUrl :=ctx.Param("shortUrl")
     urlRecord, err := store.UrlRecordRead(shortUrl)
-    statusCode := http.StatusFound
+    statusCode := http.StatusOK
 
     if err == nil {
        ctx.Header("Content-Type", "application/json")
@@ -193,16 +215,11 @@ func ShortUrlStatistics(ctx *gin.Context) {
     }
 }
 
-func ShortUrlDelete(ctx *gin.Context, urlCodeHostname string) {
-    var deleteRequest UrlDeleteRequest
-    if err :=ctx.ShouldBindJSON(&deleteRequest); err != nil {
-       ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-        return
-    }
-
-    shortUrl := strings.Replace(deleteRequest.ShortUrl, urlCodeHostname + "/", "", -1)
+// Handling the Request about deletion for a short link and it's DB record entry
+func shortUrlDelete(ctx *gin.Context) {
+    shortUrl := ctx.Params.ByName("shortUrl")
     urlRecord, err := store.UrlRecordRead(shortUrl)
-    statusCode := http.StatusFound
+    statusCode := http.StatusNoContent
 
     var errs error = nil
     if err == nil {
@@ -224,19 +241,18 @@ func ShortUrlDelete(ctx *gin.Context, urlCodeHostname string) {
     }
 
     if err != nil || errs != nil {
-        errorResponse(ctx, http.StatusInternalServerError, err)
+        errorResponse(ctx, http.StatusNotFound, err)
     }
 }
-////////////////////////////////////////////////////////////
 
 // Function to parse URLs which might be recognized as Request-URIs
 // Shall return an absolute URI as valid URL
 func parseUrl(inputUrl string) string {
     var err error
+    u, err := url.Parse(inputUrl)
     // force interpretation as absolute URI, see https://golang.org/pkg/net/url/#ParseRequestURI
-    u, err := url.ParseRequestURI(inputUrl)
-    if err != nil || u.Host == "" {
-        u, repErr := url.ParseRequestURI("https://" + inputUrl)
+    if (err != nil || u.Host == "") && (u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "file") {
+            u, repErr := url.ParseRequestURI("https://" + inputUrl)
         if repErr != nil {
             fmt.Printf("Could not parse raw url: %s, error: %v", inputUrl, err)
             return u.String()
